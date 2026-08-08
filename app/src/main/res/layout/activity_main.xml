@@ -54,6 +54,13 @@
             android:layout_marginTop="24dp"
             android:text="@string/continue_reading" />
 
+        <Button
+            android:id="@+id/libraryButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/library_title" />
+
     </LinearLayout>
 
     <!-- PDF screen -->

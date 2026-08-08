@@ -8,6 +8,7 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.content.Intent
 
 class MainActivity : AppCompatActivity() {
     private lateinit var pdfView: PDFView
@@ -21,6 +22,7 @@ class MainActivity : AppCompatActivity() {
         preferences = getSharedPreferences("reader", MODE_PRIVATE)
 
         pdfView = findViewById(R.id.pdfView)
+        val openPdf = intent.getBooleanExtra("open_pdf", false)
         readingProgress = findViewById(R.id.readingProgress)
         progressText = findViewById(R.id.progressText)
         readingProgress.progress = preferences.getInt("reading_progress", 0)
@@ -30,6 +32,12 @@ class MainActivity : AppCompatActivity() {
 
 
         val continueButton = findViewById<Button>(R.id.continueButton)
+        val libraryButton = findViewById<Button>(R.id.libraryButton)
+        libraryButton.setOnClickListener {
+            val intent = Intent(this, LibraryActivity::class.java)
+            startActivity(intent)
+        }
+
         val homeLayout = findViewById<LinearLayout>(R.id.homeLayout)
 
         continueButton.setOnClickListener {
@@ -54,6 +62,9 @@ class MainActivity : AppCompatActivity() {
                     progressText.text = getString(R.string.reading_progress_percent, progress)                }
 
                 .load()
+        }
+        if (openPdf) {
+            continueButton.performClick()
         }
     }
 }
