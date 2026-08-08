@@ -3,4 +3,8 @@
     <string name="book_title">80% Mindset 20% Skill</string>
     <string name="continue_reading">Continue Reading</string>
     <string name="app_title">Mindset Reader</string>
+    <string name="reading_progress">Reading Progress</string>
+    <string name="reading_progress_zero">Reading Progress: 0%</string>
+    <string name="reading_progress_percent">Reading Progress: %1$d%%</string>
+
 </resources>

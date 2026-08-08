@@ -6,10 +6,14 @@ import com.github.barteksc.pdfviewer.PDFView
 import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.TextView
 
 class MainActivity : AppCompatActivity() {
     private lateinit var pdfView: PDFView
     private lateinit var preferences: android.content.SharedPreferences
+    private lateinit var readingProgress: ProgressBar
+    private lateinit var progressText: TextView
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -17,6 +21,13 @@ class MainActivity : AppCompatActivity() {
         preferences = getSharedPreferences("reader", MODE_PRIVATE)
 
         pdfView = findViewById(R.id.pdfView)
+        readingProgress = findViewById(R.id.readingProgress)
+        progressText = findViewById(R.id.progressText)
+        readingProgress.progress = preferences.getInt("reading_progress", 0)
+
+        val savedProgress = preferences.getInt("reading_progress", 0)
+        progressText.text = getString(R.string.reading_progress_percent, savedProgress)
+
 
         val continueButton = findViewById<Button>(R.id.continueButton)
         val homeLayout = findViewById<LinearLayout>(R.id.homeLayout)
@@ -33,7 +44,15 @@ class MainActivity : AppCompatActivity() {
                     preferences.edit()
                         .putInt("last_page", page)
                         .apply()
-                }
+
+                    val progress = ((page + 1) * 100) / pageCount
+                    readingProgress.progress = progress
+                    preferences.edit()
+                        .putInt("reading_progress", progress)
+                        .apply()
+
+                    progressText.text = getString(R.string.reading_progress_percent, progress)                }
+
                 .load()
         }
     }
