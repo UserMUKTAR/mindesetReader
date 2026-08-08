@@ -3,6 +3,9 @@ package com.muktar.mindsetreader
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import com.github.barteksc.pdfviewer.PDFView
+import android.view.View
+import android.widget.Button
+import android.widget.LinearLayout
 
 class MainActivity : AppCompatActivity() {
     private lateinit var pdfView: PDFView
@@ -14,16 +17,24 @@ class MainActivity : AppCompatActivity() {
         preferences = getSharedPreferences("reader", MODE_PRIVATE)
 
         pdfView = findViewById(R.id.pdfView)
-        val lastPage = preferences.getInt("last_page", 0)
 
-        pdfView.fromAsset("mindset.pdf")
-            .defaultPage(lastPage)
-            .onPageChange { page, pageCount ->
-                preferences.edit()
-                    .putInt("last_page", page)
-                    .apply()
-            }
-            .load()
+        val continueButton = findViewById<Button>(R.id.continueButton)
+        val homeLayout = findViewById<LinearLayout>(R.id.homeLayout)
 
+        continueButton.setOnClickListener {
+            homeLayout.visibility = View.GONE
+            pdfView.visibility = View.VISIBLE
+
+            val lastPage = preferences.getInt("last_page", 0)
+
+            pdfView.fromAsset("mindset.pdf")
+                .defaultPage(lastPage)
+                .onPageChange { page, pageCount ->
+                    preferences.edit()
+                        .putInt("last_page", page)
+                        .apply()
+                }
+                .load()
+        }
     }
 }
