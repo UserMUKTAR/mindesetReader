@@ -9,6 +9,7 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.content.Intent
+import android.net.Uri
 
 class MainActivity : AppCompatActivity() {
     private lateinit var pdfView: PDFView
@@ -23,6 +24,7 @@ class MainActivity : AppCompatActivity() {
 
         pdfView = findViewById(R.id.pdfView)
         val openPdf = intent.getBooleanExtra("open_pdf", false)
+        val pdfUri = intent.getStringExtra("pdf_uri")
         readingProgress = findViewById(R.id.readingProgress)
         progressText = findViewById(R.id.progressText)
         readingProgress.progress = preferences.getInt("reading_progress", 0)
@@ -46,7 +48,13 @@ class MainActivity : AppCompatActivity() {
 
             val lastPage = preferences.getInt("last_page", 0)
 
-            pdfView.fromAsset("mindset.pdf")
+            val pdfLoader = if (pdfUri != null) {
+                pdfView.fromUri(Uri.parse(pdfUri))
+            } else {
+                pdfView.fromAsset("mindset.pdf")
+            }
+
+            pdfLoader
                 .defaultPage(lastPage)
                 .onPageChange { page, pageCount ->
                     preferences.edit()
