@@ -25,11 +25,12 @@ class MainActivity : AppCompatActivity() {
         pdfView = findViewById(R.id.pdfView)
         val openPdf = intent.getBooleanExtra("open_pdf", false)
         val pdfUri = intent.getStringExtra("pdf_uri")
+        val bookId = pdfUri?.hashCode()?.toString() ?: "mindset"
         readingProgress = findViewById(R.id.readingProgress)
         progressText = findViewById(R.id.progressText)
-        readingProgress.progress = preferences.getInt("reading_progress", 0)
+        readingProgress.progress = preferences.getInt("book_${bookId}_progress", 0)
 
-        val savedProgress = preferences.getInt("reading_progress", 0)
+        val savedProgress = preferences.getInt("book_${bookId}_progress", 0)
         progressText.text = getString(R.string.reading_progress_percent, savedProgress)
 
 
@@ -46,7 +47,7 @@ class MainActivity : AppCompatActivity() {
             homeLayout.visibility = View.GONE
             pdfView.visibility = View.VISIBLE
 
-            val lastPage = preferences.getInt("last_page", 0)
+            val lastPage = preferences.getInt("book_${bookId}_last_page", 0)
 
             val pdfLoader = if (pdfUri != null) {
                 pdfView.fromUri(Uri.parse(pdfUri))
@@ -58,13 +59,13 @@ class MainActivity : AppCompatActivity() {
                 .defaultPage(lastPage)
                 .onPageChange { page, pageCount ->
                     preferences.edit()
-                        .putInt("last_page", page)
+                        .putInt("book_${bookId}_last_page", page)
                         .apply()
 
                     val progress = ((page + 1) * 100) / pageCount
                     readingProgress.progress = progress
                     preferences.edit()
-                        .putInt("reading_progress", progress)
+                        .putInt("book_${bookId}_progress", progress)
                         .apply()
 
                     progressText.text = getString(R.string.reading_progress_percent, progress)                }
