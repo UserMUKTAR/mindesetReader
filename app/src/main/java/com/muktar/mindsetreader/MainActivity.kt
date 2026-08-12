@@ -20,7 +20,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        preferences = getSharedPreferences("reader", MODE_PRIVATE)
+        preferences = getSharedPreferences("library", MODE_PRIVATE)
 
         pdfView = findViewById(R.id.pdfView)
         val openPdf = intent.getBooleanExtra("open_pdf", false)
