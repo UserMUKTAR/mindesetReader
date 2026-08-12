@@ -55,7 +55,7 @@ class LibraryActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_library)
-        val mindsetBookButton = findViewById<Button>(R.id.mindsetBookButton)
+
         val addPdfButton = findViewById<Button>(R.id.addPdfButton)
         pdfLibraryContainer =
             findViewById(R.id.pdfLibraryContainer)
@@ -64,11 +64,23 @@ class LibraryActivity : AppCompatActivity() {
             pdfPicker.launch(arrayOf("application/pdf"))
         }
 
-        mindsetBookButton.setOnClickListener {
-            val intent = Intent(this, MainActivity::class.java)
-            intent.putExtra("open_pdf", true)
-            startActivity(intent)
+
+        val preferences = getSharedPreferences("library", MODE_PRIVATE)
+
+        if (!preferences.getBoolean("mindset_added", false)) {
+            val mindsetBook = PdfBook(
+                id = "mindset",
+                name = getString(R.string.book_title),
+                uri = "asset://mindset.pdf"
+            )
+
+            saveBook(mindsetBook)
+
+            preferences.edit()
+                .putBoolean("mindset_added", true)
+                .apply()
         }
+
         loadBooks()
     }
 

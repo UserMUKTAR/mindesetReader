@@ -25,7 +25,11 @@ class MainActivity : AppCompatActivity() {
         pdfView = findViewById(R.id.pdfView)
         val openPdf = intent.getBooleanExtra("open_pdf", false)
         val pdfUri = intent.getStringExtra("pdf_uri")
-        val bookId = pdfUri?.hashCode()?.toString() ?: "mindset"
+        val bookId = when {
+            pdfUri == "asset://mindset.pdf" -> "mindset"
+            pdfUri != null -> pdfUri.hashCode().toString()
+            else -> "mindset"
+        }
         readingProgress = findViewById(R.id.readingProgress)
         progressText = findViewById(R.id.progressText)
         readingProgress.progress = preferences.getInt("book_${bookId}_progress", 0)
@@ -49,7 +53,10 @@ class MainActivity : AppCompatActivity() {
 
             val lastPage = preferences.getInt("book_${bookId}_last_page", 0)
 
-            val pdfLoader = if (pdfUri != null) {
+
+            val pdfLoader = if (pdfUri != null && pdfUri.startsWith("asset://")) {
+                pdfView.fromAsset(pdfUri.removePrefix("asset://"))
+            } else if (pdfUri != null) {
                 pdfView.fromUri(Uri.parse(pdfUri))
             } else {
                 pdfView.fromAsset("mindset.pdf")
