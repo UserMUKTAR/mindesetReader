@@ -10,7 +10,7 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.content.Intent
 import android.net.Uri
-
+import androidx.activity.OnBackPressedCallback
 class MainActivity : AppCompatActivity() {
     private lateinit var pdfView: PDFView
     private lateinit var preferences: android.content.SharedPreferences
@@ -20,18 +20,59 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val openPdf = intent.getBooleanExtra("open_pdf", false)
+        val fromLibrary = intent.getBooleanExtra("from_library", false)
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (pdfView.visibility == View.VISIBLE) {
+                    if (fromLibrary) {
+                        finish()
+                    } else {
+                        pdfView.visibility = View.GONE
+                        findViewById<LinearLayout>(R.id.homeLayout).visibility = View.VISIBLE
+                    }
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
+
         preferences = getSharedPreferences("library", MODE_PRIVATE)
 
         pdfView = findViewById(R.id.pdfView)
-        val openPdf = intent.getBooleanExtra("open_pdf", false)
+
         val pdfUri = intent.getStringExtra("pdf_uri")
+            ?: preferences.getString("last_opened_book_uri", null)
+
         val bookId = when {
             pdfUri == "asset://mindset.pdf" -> "mindset"
             pdfUri != null -> pdfUri.hashCode().toString()
             else -> "mindset"
         }
+        if (pdfUri != null) {
+            preferences.edit()
+                .putString("last_opened_book_uri", pdfUri)
+                .apply()
+        }
+
+
         readingProgress = findViewById(R.id.readingProgress)
         progressText = findViewById(R.id.progressText)
+        val homeBookTitle = findViewById<TextView>(R.id.homeBookTitle)
+        if (pdfUri != null) {
+            val libraryPreferences = getSharedPreferences("library", MODE_PRIVATE)
+            val savedName = libraryPreferences.getString(
+                "book_${bookId}_name",
+                null
+            )
+
+            if (savedName != null) {
+                homeBookTitle.text = savedName
+            }
+        }
+
         readingProgress.progress = preferences.getInt("book_${bookId}_progress", 0)
 
         val savedProgress = preferences.getInt("book_${bookId}_progress", 0)
@@ -48,16 +89,27 @@ class MainActivity : AppCompatActivity() {
         val homeLayout = findViewById<LinearLayout>(R.id.homeLayout)
 
         continueButton.setOnClickListener {
+            val uriToOpen = intent.getStringExtra("pdf_uri")
+                ?: preferences.getString("last_opened_book_uri", null)
+
+            val bookIdToOpen = when {
+                uriToOpen == "asset://mindset.pdf" -> "mindset"
+                uriToOpen != null -> uriToOpen.hashCode().toString()
+                else -> "mindset"
+            }
+
             homeLayout.visibility = View.GONE
             pdfView.visibility = View.VISIBLE
 
-            val lastPage = preferences.getInt("book_${bookId}_last_page", 0)
+            val lastPage = preferences.getInt(
+                "book_${bookIdToOpen}_last_page",
+                0
+            )
 
-
-            val pdfLoader = if (pdfUri != null && pdfUri.startsWith("asset://")) {
-                pdfView.fromAsset(pdfUri.removePrefix("asset://"))
-            } else if (pdfUri != null) {
-                pdfView.fromUri(Uri.parse(pdfUri))
+            val pdfLoader = if (uriToOpen != null && uriToOpen.startsWith("asset://")) {
+                pdfView.fromAsset(uriToOpen.removePrefix("asset://"))
+            } else if (uriToOpen != null) {
+                pdfView.fromUri(Uri.parse(uriToOpen))
             } else {
                 pdfView.fromAsset("mindset.pdf")
             }
@@ -66,21 +118,67 @@ class MainActivity : AppCompatActivity() {
                 .defaultPage(lastPage)
                 .onPageChange { page, pageCount ->
                     preferences.edit()
-                        .putInt("book_${bookId}_last_page", page)
+                        .putInt("book_${bookIdToOpen}_last_page", page)
                         .apply()
 
                     val progress = ((page + 1) * 100) / pageCount
+
                     readingProgress.progress = progress
+
                     preferences.edit()
-                        .putInt("book_${bookId}_progress", progress)
+                        .putInt("book_${bookIdToOpen}_progress", progress)
                         .apply()
 
-                    progressText.text = getString(R.string.reading_progress_percent, progress)                }
-
+                    progressText.text = getString(
+                        R.string.reading_progress_percent,
+                        progress
+                    )
+                }
                 .load()
         }
+
         if (openPdf) {
             continueButton.performClick()
         }
     }
+    override fun onResume() {
+        super.onResume()
+
+        val homeBookTitle = findViewById<TextView>(R.id.homeBookTitle)
+
+        val libraryPreferences =
+            getSharedPreferences("library", MODE_PRIVATE)
+
+        val lastOpenedUri =
+            libraryPreferences.getString("last_opened_book_uri", null)
+
+        if (lastOpenedUri != null) {
+            val lastBookId = when {
+                lastOpenedUri == "asset://mindset.pdf" -> "mindset"
+                else -> lastOpenedUri.hashCode().toString()
+            }
+            val latestProgress = libraryPreferences.getInt(
+                "book_${lastBookId}_progress",
+                0
+            )
+
+            readingProgress.progress = latestProgress
+
+            progressText.text = getString(
+                R.string.reading_progress_percent,
+                latestProgress
+            )
+            val savedName = libraryPreferences.getString(
+                "book_${lastBookId}_name",
+                null
+            )
+
+            if (savedName != null) {
+                homeBookTitle.text = savedName
+            }
+        }
+
+    }
+
+
 }

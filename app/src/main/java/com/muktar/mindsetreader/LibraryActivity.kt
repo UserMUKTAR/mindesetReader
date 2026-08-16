@@ -84,6 +84,14 @@ class LibraryActivity : AppCompatActivity() {
         loadBooks()
     }
 
+    override fun onResume() {
+        super.onResume()
+
+        if (::pdfLibraryContainer.isInitialized) {
+            pdfLibraryContainer.removeAllViews()
+            loadBooks()
+        }
+    }
     private fun saveBook(book: PdfBook) {
         val preferences = getSharedPreferences("library", MODE_PRIVATE)
 
@@ -137,10 +145,14 @@ class LibraryActivity : AppCompatActivity() {
             book.progress
         )
 
-        itemView.setOnClickListener {
+        val resumeButton =
+            itemView.findViewById<Button>(R.id.pdfBookResumeButton)
+
+        resumeButton.setOnClickListener {
             val intent = Intent(this, MainActivity::class.java)
             intent.putExtra("pdf_uri", book.uri)
             intent.putExtra("open_pdf", true)
+            intent.putExtra("from_library", true)
             startActivity(intent)
         }
 

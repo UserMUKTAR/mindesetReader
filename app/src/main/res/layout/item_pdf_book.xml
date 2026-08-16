@@ -27,5 +27,11 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:text="@string/reading_progress_zero" />
+    <Button
+        android:id="@+id/pdfBookResumeButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/resume" />
 
 </LinearLayout>

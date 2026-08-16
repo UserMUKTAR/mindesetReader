@@ -8,5 +8,5 @@
     <string name="reading_progress_percent">Reading Progress: %1$d%%</string>
     <string name="library_title">My Library</string>
     <string name="add_pdf">Add PDF</string>
-
+    <string name="resume">Resume</string>
 </resources>
