@@ -11,9 +11,12 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/background"
-        android:gravity="center"
+        android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="80dp"
+        android:paddingBottom="24dp" >
 
         <TextView
             android:layout_width="wrap_content"
@@ -23,44 +26,58 @@
             android:textStyle="bold"
             android:textColor="@color/text_primary" />
 
-        <TextView
-            android:id="@+id/homeBookTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/book_title"
-            android:textSize="18sp"
-            android:textColor="@color/text_primary" />
-
-        <ProgressBar
-            android:id="@+id/readingProgress"
-            style="?android:attr/progressBarStyleHorizontal"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:max="100"
-            android:progress="0"
-            android:progressTint="@color/progress"  />
+            android:orientation="vertical"
+            android:background="@drawable/home_continue_card_background">
 
-        <TextView
-            android:id="@+id/progressText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="@string/reading_progress_zero"
-            android:textSize="16sp"
-            android:textColor="@color/text_secondary" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/continue_reading"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_secondary" />
+            <TextView
+                android:id="@+id/homeBookTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/book_title"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary" />
 
+            <ProgressBar
+                android:id="@+id/readingProgress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="8dp"
+                android:layout_marginTop="20dp"
+                android:max="100"
+                android:progress="0"
+                android:progressTint="@color/progress" />
 
+            <TextView
+                android:id="@+id/progressText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/reading_progress_zero"
+                android:textSize="16sp"
+                android:textColor="@color/text_secondary" />
 
-        <Button
-            android:id="@+id/continueButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="@string/continue_reading"
-            android:textColor="@color/white"
-            android:backgroundTint="@color/primary" />
+            <Button
+                android:id="@+id/continueButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="@string/continue_reading"
+                android:textColor="@color/white"
+                android:backgroundTint="@color/primary" />
+
+        </LinearLayout>
 
         <Button
             android:id="@+id/libraryButton"
