@@ -10,6 +10,7 @@
         android:id="@+id/homeLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@color/background"
         android:gravity="center"
         android:orientation="vertical"
         android:padding="24dp">
@@ -19,7 +20,8 @@
             android:layout_height="wrap_content"
             android:text="@string/app_title"
             android:textSize="28sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textColor="@color/text_primary" />
 
         <TextView
             android:id="@+id/homeBookTitle"
@@ -27,7 +29,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:text="@string/book_title"
-            android:textSize="18sp" />
+            android:textSize="18sp"
+            android:textColor="@color/text_primary" />
 
         <ProgressBar
             android:id="@+id/readingProgress"
@@ -36,7 +39,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:max="100"
-            android:progress="0" />
+            android:progress="0"
+            android:progressTint="@color/progress"  />
 
         <TextView
             android:id="@+id/progressText"
@@ -44,7 +48,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="@string/reading_progress_zero"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:textColor="@color/text_secondary" />
 
 
 
@@ -53,14 +58,18 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="@string/continue_reading" />
+            android:text="@string/continue_reading"
+            android:textColor="@color/white"
+            android:backgroundTint="@color/primary" />
 
         <Button
             android:id="@+id/libraryButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="@string/library_title" />
+            android:text="@string/library_title"
+            android:textColor="@color/primary"
+            android:backgroundTint="@color/primary_light" />
 
     </LinearLayout>
 

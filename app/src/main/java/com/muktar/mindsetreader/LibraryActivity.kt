@@ -9,6 +9,7 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
+import android.provider.OpenableColumns
 class LibraryActivity : AppCompatActivity() {
 
     private lateinit var pdfLibraryContainer: LinearLayout
@@ -25,7 +26,23 @@ class LibraryActivity : AppCompatActivity() {
                     .putString("last_pdf_uri", uri.toString())
                     .apply()
 
-                val bookName = uri.lastPathSegment ?: "PDF"
+                val bookName = contentResolver.query(
+                    uri,
+                    arrayOf(OpenableColumns.DISPLAY_NAME),
+                    null,
+                    null,
+                    null
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        cursor.getString(
+                            cursor.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME)
+                        ).removeSuffix(".pdf")
+                            .removeSuffix(".PDF")
+                    } else {
+                        "PDF"
+                    }
+                } ?: "PDF"
+
                 val bookId = uri.toString().hashCode().toString()
                 val book = PdfBook(
                     id = bookId,
@@ -102,7 +119,30 @@ class LibraryActivity : AppCompatActivity() {
             .putInt("book_${book.id}_progress", book.progress)
             .apply()
     }
+    private fun getDisplayName(uriString: String, fallbackName: String): String {
+        val uri = Uri.parse(uriString)
 
+        val displayName = contentResolver.query(
+            uri,
+            arrayOf(OpenableColumns.DISPLAY_NAME),
+            null,
+            null,
+            null
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                cursor.getString(
+                    cursor.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME)
+                )
+            } else {
+                null
+            }
+        }
+
+        return (displayName ?: fallbackName)
+            .removeSuffix(".pdf")
+            .removeSuffix(".PDF")
+            .trim()
+    }
     private fun loadBooks() {
         val preferences = getSharedPreferences("library", MODE_PRIVATE)
 
@@ -110,8 +150,10 @@ class LibraryActivity : AppCompatActivity() {
             if (key.startsWith("book_") && key.endsWith("_name")) {
                 val bookId = key.removePrefix("book_").removeSuffix("_name")
 
-                val name = value as? String ?: continue
+                val storedName = value as? String ?: continue
                 val uri = preferences.getString("book_${bookId}_uri", null) ?: continue
+                val name = getDisplayName(uri, storedName)
+
                 val lastPage = preferences.getInt("book_${bookId}_last_page", 0)
                 val progress = preferences.getInt("book_${bookId}_progress", 0)
 

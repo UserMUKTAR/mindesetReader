@@ -5,6 +5,25 @@
     <color name="purple_700">#FF3700B3</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
+    <!-- Main brand colors -->
+    <color name="primary">#315C8A</color>
+    <color name="primary_dark">#234568</color>
+    <color name="primary_light">#DCE9F5</color>
+
+    <!-- Surfaces -->
+    <color name="background">#F7F5F1</color>
+    <color name="surface">#FFFFFF</color>
+
+    <!-- Text -->
+    <color name="text_primary">#20252B</color>
+    <color name="text_secondary">#68717C</color>
+
+    <!-- Progress -->
+    <color name="progress_background">#D9DEE3</color>
+    <color name="progress">#315C8A</color>
+
+    <!-- Basic -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
 </resources>
