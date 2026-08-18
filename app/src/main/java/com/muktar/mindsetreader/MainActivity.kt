@@ -46,11 +46,8 @@ class MainActivity : AppCompatActivity() {
         val pdfUri = intent.getStringExtra("pdf_uri")
             ?: preferences.getString("last_opened_book_uri", null)
 
-        val bookId = when {
-            pdfUri == "asset://mindset.pdf" -> "mindset"
-            pdfUri != null -> pdfUri.hashCode().toString()
-            else -> "mindset"
-        }
+        val bookId = pdfUri?.hashCode()?.toString()
+
         if (pdfUri != null) {
             preferences.edit()
                 .putString("last_opened_book_uri", pdfUri)
@@ -60,7 +57,14 @@ class MainActivity : AppCompatActivity() {
 
         readingProgress = findViewById(R.id.readingProgress)
         progressText = findViewById(R.id.progressText)
+
         val homeBookTitle = findViewById<TextView>(R.id.homeBookTitle)
+        val continueReadingCard =
+            findViewById<LinearLayout>(R.id.continueReadingCard)
+
+        continueReadingCard.visibility =
+            if (pdfUri != null) View.VISIBLE else View.GONE
+
         if (pdfUri != null) {
             val libraryPreferences = getSharedPreferences("library", MODE_PRIVATE)
             val savedName = libraryPreferences.getString(
@@ -88,15 +92,12 @@ class MainActivity : AppCompatActivity() {
 
         val homeLayout = findViewById<LinearLayout>(R.id.homeLayout)
 
+
         continueButton.setOnClickListener {
             val uriToOpen = intent.getStringExtra("pdf_uri")
                 ?: preferences.getString("last_opened_book_uri", null)
 
-            val bookIdToOpen = when {
-                uriToOpen == "asset://mindset.pdf" -> "mindset"
-                uriToOpen != null -> uriToOpen.hashCode().toString()
-                else -> "mindset"
-            }
+            val bookIdToOpen = uriToOpen?.hashCode()?.toString()
 
             homeLayout.visibility = View.GONE
             pdfView.visibility = View.VISIBLE
@@ -106,13 +107,11 @@ class MainActivity : AppCompatActivity() {
                 0
             )
 
-            val pdfLoader = if (uriToOpen != null && uriToOpen.startsWith("asset://")) {
-                pdfView.fromAsset(uriToOpen.removePrefix("asset://"))
-            } else if (uriToOpen != null) {
-                pdfView.fromUri(Uri.parse(uriToOpen))
-            } else {
-                pdfView.fromAsset("mindset.pdf")
+            if (uriToOpen == null) {
+                return@setOnClickListener
             }
+
+            val pdfLoader = pdfView.fromUri(Uri.parse(uriToOpen))
 
             pdfLoader
                 .defaultPage(lastPage)
@@ -146,17 +145,21 @@ class MainActivity : AppCompatActivity() {
 
         val homeBookTitle = findViewById<TextView>(R.id.homeBookTitle)
 
+        val continueReadingCard =
+            findViewById<LinearLayout>(R.id.continueReadingCard)
+
         val libraryPreferences =
             getSharedPreferences("library", MODE_PRIVATE)
 
         val lastOpenedUri =
             libraryPreferences.getString("last_opened_book_uri", null)
 
+        continueReadingCard.visibility =
+            if (lastOpenedUri != null) View.VISIBLE else View.GONE
+
         if (lastOpenedUri != null) {
-            val lastBookId = when {
-                lastOpenedUri == "asset://mindset.pdf" -> "mindset"
-                else -> lastOpenedUri.hashCode().toString()
-            }
+            val lastBookId = lastOpenedUri.hashCode().toString()
+
             val latestProgress = libraryPreferences.getInt(
                 "book_${lastBookId}_progress",
                 0

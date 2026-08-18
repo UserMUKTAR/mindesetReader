@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string-array name="reading_quotes">
+        <item>A good book can change the way you see the world.</item>
+        <item>Reading is a journey, one page at a time.</item>
+        <item>Every page is a chance to discover something new.</item>
+        <item>Give yourself a few quiet pages today.</item>
+        <item>One page today is better than none.</item>
+    </string-array>
+
+</resources>

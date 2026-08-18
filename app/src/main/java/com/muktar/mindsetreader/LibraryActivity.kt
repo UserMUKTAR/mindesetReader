@@ -10,6 +10,8 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import android.provider.OpenableColumns
+import androidx.appcompat.app.AlertDialog
+
 class LibraryActivity : AppCompatActivity() {
 
     private lateinit var pdfLibraryContainer: LinearLayout
@@ -83,20 +85,6 @@ class LibraryActivity : AppCompatActivity() {
 
 
         val preferences = getSharedPreferences("library", MODE_PRIVATE)
-
-        if (!preferences.getBoolean("mindset_added", false)) {
-            val mindsetBook = PdfBook(
-                id = "mindset",
-                name = getString(R.string.book_title),
-                uri = "asset://mindset.pdf"
-            )
-
-            saveBook(mindsetBook)
-
-            preferences.edit()
-                .putBoolean("mindset_added", true)
-                .apply()
-        }
 
         loadBooks()
     }
@@ -196,6 +184,35 @@ class LibraryActivity : AppCompatActivity() {
             intent.putExtra("open_pdf", true)
             intent.putExtra("from_library", true)
             startActivity(intent)
+        }
+
+        val deleteButton =
+            itemView.findViewById<Button>(R.id.pdfBookDeleteButton)
+
+        deleteButton.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("Delete book?")
+                .setMessage("Are you sure you want to remove \"${book.name}\" from your library?")
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Delete") { _, _ ->
+                    val preferences = getSharedPreferences("library", MODE_PRIVATE)
+                    val lastOpenedUri = preferences.getString("last_opened_book_uri", null)
+
+                    if (lastOpenedUri == book.uri) {
+                        preferences.edit()
+                            .remove("last_opened_book_uri")
+                            .apply()
+                    }
+
+                    preferences.edit()
+                        .remove("book_${book.id}_name")
+                        .remove("book_${book.id}_uri")
+                        .remove("book_${book.id}_last_page")
+                        .remove("book_${book.id}_progress")
+                        .apply()
+
+                    pdfLibraryContainer.removeView(itemView)                }
+                .show()
         }
 
         pdfLibraryContainer.addView(itemView)

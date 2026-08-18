@@ -9,4 +9,5 @@
     <string name="library_title">My Library</string>
     <string name="add_pdf">Add PDF</string>
     <string name="resume">Resume</string>
+    <string name="delete">Delete</string>
 </resources>

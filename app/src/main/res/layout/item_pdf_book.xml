@@ -4,7 +4,8 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:layout_marginTop="12dp"
-    android:background="@drawable/pdf_book_card_background">
+    android:background="@drawable/pdf_book_card_background"
+    android:padding="16dp">
 
     <TextView
         android:id="@+id/pdfBookName"
@@ -45,5 +46,14 @@
         android:textAllCaps="false"
         android:textColor="@color/white"
         android:backgroundTint="@color/primary" />
+
+    <Button
+        android:id="@+id/pdfBookDeleteButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="@string/delete"
+        android:textAllCaps="false"
+        android:textColor="@color/text_secondary" />
 
 </LinearLayout>
