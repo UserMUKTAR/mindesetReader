@@ -144,6 +144,14 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
 
         val homeBookTitle = findViewById<TextView>(R.id.homeBookTitle)
+        val dailyQuoteText = findViewById<TextView>(R.id.dailyQuoteText)
+
+        val quotes = resources.getStringArray(R.array.reading_quotes)
+
+        val dayOfYear = java.util.Calendar.getInstance()
+            .get(java.util.Calendar.DAY_OF_YEAR)
+
+        dailyQuoteText.text = quotes[dayOfYear % quotes.size]
 
         val continueReadingCard =
             findViewById<LinearLayout>(R.id.continueReadingCard)
@@ -178,6 +186,11 @@ class MainActivity : AppCompatActivity() {
 
             if (savedName != null) {
                 homeBookTitle.text = savedName
+                    .substringAfterLast("/")
+                    .removePrefix("raw:")
+                    .removeSuffix(".pdf")
+                    .removeSuffix(".PDF")
+                    .trim()
             }
         }
 
