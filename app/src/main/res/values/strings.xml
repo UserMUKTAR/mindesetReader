@@ -11,4 +11,6 @@
     <string name="resume">Resume</string>
     <string name="delete">Delete</string>
     <string name="daily_reading">Daily Reading</string>
+    <string name="search_books">Search books</string>
+
 </resources>

@@ -11,6 +11,9 @@ import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import android.provider.OpenableColumns
 import androidx.appcompat.app.AlertDialog
+import android.widget.EditText
+import android.text.Editable
+import android.text.TextWatcher
 
 class LibraryActivity : AppCompatActivity() {
 
@@ -79,12 +82,35 @@ class LibraryActivity : AppCompatActivity() {
         pdfLibraryContainer =
             findViewById(R.id.pdfLibraryContainer)
 
+        val librarySearch =
+            findViewById<EditText>(R.id.librarySearch)
+
+        librarySearch.addTextChangedListener(object : TextWatcher {
+
+            override fun beforeTextChanged(
+                s: CharSequence?,
+                start: Int,
+                count: Int,
+                after: Int
+            ) {
+            }
+
+            override fun onTextChanged(
+                s: CharSequence?,
+                start: Int,
+                before: Int,
+                count: Int
+            ) {
+                filterBooks(s?.toString().orEmpty())
+            }
+
+            override fun afterTextChanged(s: Editable?) {
+            }
+        })
+
         addPdfButton.setOnClickListener {
             pdfPicker.launch(arrayOf("application/pdf"))
         }
-
-
-        val preferences = getSharedPreferences("library", MODE_PRIVATE)
 
         loadBooks()
     }
@@ -157,6 +183,51 @@ class LibraryActivity : AppCompatActivity() {
             }
         }
     }
+
+    private fun filterBooks(query: String) {
+        val searchQuery = query.trim().lowercase()
+
+        pdfLibraryContainer.removeAllViews()
+
+        val preferences = getSharedPreferences("library", MODE_PRIVATE)
+
+        for ((key, value) in preferences.all) {
+            if (key.startsWith("book_") && key.endsWith("_name")) {
+
+                val bookId =
+                    key.removePrefix("book_").removeSuffix("_name")
+
+                val storedName = value as? String ?: continue
+
+                val uri =
+                    preferences.getString("book_${bookId}_uri", null)
+                        ?: continue
+
+                val name = getDisplayName(uri, storedName)
+
+                if (searchQuery.isEmpty() ||
+                    name.lowercase().contains(searchQuery)
+                ) {
+                    val lastPage =
+                        preferences.getInt("book_${bookId}_last_page", 0)
+
+                    val progress =
+                        preferences.getInt("book_${bookId}_progress", 0)
+
+                    addBookButton(
+                        PdfBook(
+                            id = bookId,
+                            name = name,
+                            uri = uri,
+                            lastPage = lastPage,
+                            progress = progress
+                        )
+                    )
+                }
+            }
+        }
+    }
+
     private fun addBookButton(book: PdfBook) {
         val itemView = layoutInflater.inflate(
             R.layout.item_pdf_book,
