@@ -10,12 +10,14 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.content.Intent
 import android.net.Uri
+import android.widget.FrameLayout
 import androidx.activity.OnBackPressedCallback
 class MainActivity : AppCompatActivity() {
     private lateinit var pdfView: PDFView
     private lateinit var preferences: android.content.SharedPreferences
     private lateinit var readingProgress: ProgressBar
     private lateinit var progressText: TextView
+    private lateinit var pdfScreen: FrameLayout
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -25,11 +27,11 @@ class MainActivity : AppCompatActivity() {
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (pdfView.visibility == View.VISIBLE) {
+                if (pdfScreen.visibility == View.VISIBLE) {
                     if (fromLibrary) {
                         finish()
                     } else {
-                        pdfView.visibility = View.GONE
+                        pdfScreen.visibility = View.GONE
                         findViewById<LinearLayout>(R.id.homeLayout).visibility = View.VISIBLE
                     }
                 } else {
@@ -41,7 +43,8 @@ class MainActivity : AppCompatActivity() {
 
         preferences = getSharedPreferences("library", MODE_PRIVATE)
 
-        pdfView = findViewById(R.id.pdfView)
+        pdfScreen = findViewById(R.id.pdfScreen)
+
 
         val pdfUri = intent.getStringExtra("pdf_uri")
             ?: preferences.getString("last_opened_book_uri", null)
@@ -99,17 +102,18 @@ class MainActivity : AppCompatActivity() {
 
             val bookIdToOpen = uriToOpen?.hashCode()?.toString()
 
+            if (uriToOpen == null) {
+                return@setOnClickListener
+            }
             homeLayout.visibility = View.GONE
-            pdfView.visibility = View.VISIBLE
+            pdfScreen.visibility = View.VISIBLE
 
             val lastPage = preferences.getInt(
                 "book_${bookIdToOpen}_last_page",
                 0
             )
 
-            if (uriToOpen == null) {
-                return@setOnClickListener
-            }
+
 
             val pdfLoader = pdfView.fromUri(Uri.parse(uriToOpen))
 

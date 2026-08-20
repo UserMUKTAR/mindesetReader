@@ -12,5 +12,6 @@
     <string name="delete">Delete</string>
     <string name="daily_reading">Daily Reading</string>
     <string name="search_books">Search books</string>
+    <string name="bookmark_page">Bookmark Page</string>
 
 </resources>
