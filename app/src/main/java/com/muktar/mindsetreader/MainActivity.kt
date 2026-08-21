@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
         preferences = getSharedPreferences("library", MODE_PRIVATE)
 
         pdfScreen = findViewById(R.id.pdfScreen)
-
+        pdfView = findViewById(R.id.pdfView)
 
         val pdfUri = intent.getStringExtra("pdf_uri")
             ?: preferences.getString("last_opened_book_uri", null)
@@ -103,6 +103,9 @@ class MainActivity : AppCompatActivity() {
             val bookIdToOpen = uriToOpen?.hashCode()?.toString()
 
             if (uriToOpen == null) {
+                return@setOnClickListener
+            }
+            if (bookIdToOpen == null) {
                 return@setOnClickListener
             }
             homeLayout.visibility = View.GONE
