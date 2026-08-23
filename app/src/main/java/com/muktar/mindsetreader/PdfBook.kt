@@ -5,5 +5,6 @@ data class PdfBook(
     val name: String,
     val uri: String,
     val lastPage: Int = 0,
-    val progress: Int = 0
+    val progress: Int = 0,
+    val pageCount: Int = 0
 )

@@ -171,13 +171,19 @@ class LibraryActivity : AppCompatActivity() {
                 val lastPage = preferences.getInt("book_${bookId}_last_page", 0)
                 val progress = preferences.getInt("book_${bookId}_progress", 0)
 
+                val pageCount = preferences.getInt(
+                    "book_${bookId}_page_count",
+                    0
+                )
+
                 addBookButton(
                     PdfBook(
                         id = bookId,
                         name = name,
                         uri = uri,
                         lastPage = lastPage,
-                        progress = progress
+                        progress = progress,
+                        pageCount = pageCount
                     )
                 )
             }
@@ -214,13 +220,19 @@ class LibraryActivity : AppCompatActivity() {
                     val progress =
                         preferences.getInt("book_${bookId}_progress", 0)
 
+                    val pageCount = preferences.getInt(
+                        "book_${bookId}_page_count",
+                        0
+                    )
+
                     addBookButton(
                         PdfBook(
                             id = bookId,
                             name = name,
                             uri = uri,
                             lastPage = lastPage,
-                            progress = progress
+                            progress = progress,
+                            pageCount = pageCount
                         )
                     )
                 }
@@ -241,10 +253,15 @@ class LibraryActivity : AppCompatActivity() {
 
         bookName.text = book.name
         progressBar.progress = book.progress
-        progressText.text = getString(
-            R.string.reading_progress_percent,
-            book.progress
-        )
+        progressText.text =
+            if (book.pageCount > 0) {
+                "${book.progress}% · Page ${book.lastPage + 1} of ${book.pageCount}"
+            } else {
+                getString(
+                    R.string.reading_progress_percent,
+                    book.progress
+                )
+            }
 
         val resumeButton =
             itemView.findViewById<Button>(R.id.pdfBookResumeButton)

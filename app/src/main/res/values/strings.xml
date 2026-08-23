@@ -13,5 +13,6 @@
     <string name="daily_reading">Daily Reading</string>
     <string name="search_books">Search books</string>
     <string name="bookmark_page">Bookmark Page</string>
+    <string name="reading_progress_with_page">%1$d%% · Page %2$d of %3$d</string>
 
 </resources>

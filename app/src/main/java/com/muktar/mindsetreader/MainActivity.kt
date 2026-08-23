@@ -126,6 +126,9 @@ class MainActivity : AppCompatActivity() {
                     preferences.edit()
                         .putInt("book_${bookIdToOpen}_last_page", page)
                         .apply()
+                    preferences.edit()
+                        .putInt("book_${bookIdToOpen}_page_count", pageCount)
+                        .apply()
 
                     val progress = ((page + 1) * 100) / pageCount
 
@@ -135,9 +138,13 @@ class MainActivity : AppCompatActivity() {
                         .putInt("book_${bookIdToOpen}_progress", progress)
                         .apply()
 
+
+
                     progressText.text = getString(
-                        R.string.reading_progress_percent,
-                        progress
+                        R.string.reading_progress_with_page,
+                        progress,
+                        page + 1,
+                        pageCount
                     )
                 }
                 .load()
@@ -179,13 +186,27 @@ class MainActivity : AppCompatActivity() {
                 "book_${lastBookId}_progress",
                 0
             )
+            val lastPage = libraryPreferences.getInt(
+                "book_${lastBookId}_last_page",
+                0
+            )
+
+            val pageCount = libraryPreferences.getInt(
+                "book_${lastBookId}_page_count",
+                0
+            )
 
             readingProgress.progress = latestProgress
 
-            progressText.text = getString(
-                R.string.reading_progress_percent,
-                latestProgress
-            )
+            progressText.text =
+                if (pageCount > 0) {
+                    "$latestProgress% · Page ${lastPage + 1} of $pageCount"
+                } else {
+                    getString(
+                        R.string.reading_progress_percent,
+                        latestProgress
+                    )
+                }
             val savedName = libraryPreferences.getString(
                 "book_${lastBookId}_name",
                 null
