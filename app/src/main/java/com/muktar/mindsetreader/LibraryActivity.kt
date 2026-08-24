@@ -14,6 +14,10 @@ import androidx.appcompat.app.AlertDialog
 import android.widget.EditText
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Spinner
 
 class LibraryActivity : AppCompatActivity() {
 
@@ -52,7 +56,8 @@ class LibraryActivity : AppCompatActivity() {
                 val book = PdfBook(
                     id = bookId,
                     name = bookName,
-                    uri = uri.toString()
+                    uri = uri.toString(),
+                    addedAt = System.currentTimeMillis()
                 )
                 saveBook(book)
                 addBookButton(book)
@@ -84,6 +89,36 @@ class LibraryActivity : AppCompatActivity() {
 
         val librarySearch =
             findViewById<EditText>(R.id.librarySearch)
+
+        val librarySortSpinner =
+            findViewById<Spinner>(R.id.librarySortSpinner)
+        val sortAdapter = ArrayAdapter.createFromResource(
+            this,
+            R.array.library_sort_options,
+            android.R.layout.simple_spinner_item
+        )
+
+        sortAdapter.setDropDownViewResource(
+            android.R.layout.simple_spinner_dropdown_item
+        )
+
+        librarySortSpinner.adapter = sortAdapter
+
+        librarySortSpinner.onItemSelectedListener =
+            object : AdapterView.OnItemSelectedListener {
+
+                override fun onItemSelected(
+                    parent: AdapterView<*>?,
+                    view: View?,
+                    position: Int,
+                    id: Long
+                ) {
+                    loadBooks()
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>?) {
+                }
+            }
 
         librarySearch.addTextChangedListener(object : TextWatcher {
 
@@ -131,6 +166,8 @@ class LibraryActivity : AppCompatActivity() {
             .putString("book_${book.id}_uri", book.uri)
             .putInt("book_${book.id}_last_page", book.lastPage)
             .putInt("book_${book.id}_progress", book.progress)
+            .putLong("book_${book.id}_added_at", book.addedAt)
+            .putLong("book_${book.id}_last_read_at", book.lastReadAt)
             .apply()
     }
     private fun getDisplayName(uriString: String, fallbackName: String): String {
@@ -157,8 +194,24 @@ class LibraryActivity : AppCompatActivity() {
             .removeSuffix(".PDF")
             .trim()
     }
+
+    private fun sortBooks(books: MutableList<PdfBook>): List<PdfBook> {
+        val sortPosition =
+            findViewById<Spinner>(R.id.librarySortSpinner).selectedItemPosition
+
+        return when (sortPosition) {
+            0 -> books.sortedByDescending { it.lastReadAt }
+            1 -> books.sortedByDescending { it.addedAt }
+            2 -> books.sortedBy { it.name.lowercase() }
+            3 -> books.sortedByDescending { it.progress }
+            else -> books
+        }
+    }
+
     private fun loadBooks() {
         val preferences = getSharedPreferences("library", MODE_PRIVATE)
+        pdfLibraryContainer.removeAllViews()
+        val books = mutableListOf<PdfBook>()
 
         for ((key, value) in preferences.all) {
             if (key.startsWith("book_") && key.endsWith("_name")) {
@@ -176,17 +229,38 @@ class LibraryActivity : AppCompatActivity() {
                     0
                 )
 
-                addBookButton(
+                val storedAddedAt = preferences.getLong(
+                    "book_${bookId}_added_at",
+                    0L
+                )
+
+                val addedAt = if (storedAddedAt > 0L) {
+                    storedAddedAt
+                } else {
+                    1L
+                }
+
+                val lastReadAt = preferences.getLong(
+                    "book_${bookId}_last_read_at",
+                    0L
+                )
+
+                books.add(
                     PdfBook(
                         id = bookId,
                         name = name,
                         uri = uri,
                         lastPage = lastPage,
                         progress = progress,
-                        pageCount = pageCount
+                        pageCount = pageCount,
+                        addedAt = addedAt,
+                        lastReadAt = lastReadAt
                     )
                 )
             }
+        }
+        sortBooks(books).forEach { book ->
+            addBookButton(book)
         }
     }
 
@@ -196,6 +270,7 @@ class LibraryActivity : AppCompatActivity() {
         pdfLibraryContainer.removeAllViews()
 
         val preferences = getSharedPreferences("library", MODE_PRIVATE)
+        val books = mutableListOf<PdfBook>()
 
         for ((key, value) in preferences.all) {
             if (key.startsWith("book_") && key.endsWith("_name")) {
@@ -225,18 +300,33 @@ class LibraryActivity : AppCompatActivity() {
                         0
                     )
 
-                    addBookButton(
+                    val addedAt = preferences.getLong(
+                        "book_${bookId}_added_at",
+                        1L
+                    )
+
+                    val lastReadAt = preferences.getLong(
+                        "book_${bookId}_last_read_at",
+                        0L
+                    )
+
+                    books.add(
                         PdfBook(
                             id = bookId,
                             name = name,
                             uri = uri,
                             lastPage = lastPage,
                             progress = progress,
-                            pageCount = pageCount
+                            pageCount = pageCount,
+                            addedAt = addedAt,
+                            lastReadAt = lastReadAt
                         )
                     )
                 }
             }
+        }
+        sortBooks(books).forEach { book ->
+            addBookButton(book)
         }
     }
 

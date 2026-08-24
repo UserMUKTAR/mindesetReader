@@ -138,7 +138,12 @@ class MainActivity : AppCompatActivity() {
                         .putInt("book_${bookIdToOpen}_progress", progress)
                         .apply()
 
-
+                    preferences.edit()
+                        .putLong(
+                            "book_${bookIdToOpen}_last_read_at",
+                            System.currentTimeMillis()
+                        )
+                        .apply()
 
                     progressText.text = getString(
                         R.string.reading_progress_with_page,
@@ -223,6 +228,5 @@ class MainActivity : AppCompatActivity() {
         }
 
     }
-
 
 }

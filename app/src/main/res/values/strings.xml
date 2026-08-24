@@ -14,5 +14,11 @@
     <string name="search_books">Search books</string>
     <string name="bookmark_page">Bookmark Page</string>
     <string name="reading_progress_with_page">%1$d%% · Page %2$d of %3$d</string>
+    <string-array name="library_sort_options">
+        <item>Recently Read</item>
+        <item>Recently Added</item>
+        <item>A–Z</item>
+        <item>Progress</item>
+    </string-array>
 
 </resources>
