@@ -130,7 +130,7 @@ class MainActivity : AppCompatActivity() {
                         .putInt("book_${bookIdToOpen}_page_count", pageCount)
                         .apply()
 
-                    val progress = ((page + 1) * 100) / pageCount
+                    val progress = if (pageCount > 0) ((page + 1) * 100) / pageCount else 0
 
                     readingProgress.progress = progress
 
