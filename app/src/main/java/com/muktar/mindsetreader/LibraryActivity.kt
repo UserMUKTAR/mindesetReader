@@ -32,7 +32,7 @@ class LibraryActivity : AppCompatActivity() {
                 )
                 getSharedPreferences("library", MODE_PRIVATE)
                     .edit()
-                    .putString("last_pdf_uri", uri.toString())
+                    .putString("last_opened_book_uri", uri.toString())
                     .apply()
 
                 val bookName = contentResolver.query(
