@@ -367,6 +367,9 @@ class LibraryActivity : AppCompatActivity() {
                         .remove("book_${book.id}_uri")
                         .remove("book_${book.id}_last_page")
                         .remove("book_${book.id}_progress")
+                        .remove("book_${book.id}_added_at")
+                        .remove("book_${book.id}_last_read_at")
+                        .remove("book_${book.id}_page_count")
                         .apply()
 
                     pdfLibraryContainer.removeView(itemView)                }
