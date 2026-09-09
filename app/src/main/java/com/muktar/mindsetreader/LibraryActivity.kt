@@ -157,20 +157,24 @@ class LibraryActivity : AppCompatActivity() {
     private fun getDisplayName(uriString: String, fallbackName: String): String {
         val uri = Uri.parse(uriString)
 
-        val displayName = contentResolver.query(
-            uri,
-            arrayOf(OpenableColumns.DISPLAY_NAME),
-            null,
-            null,
-            null
-        )?.use { cursor ->
-            if (cursor.moveToFirst()) {
-                cursor.getString(
-                    cursor.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME)
-                )
-            } else {
+        val displayName = try {
+            contentResolver.query(
+                uri,
+                arrayOf(OpenableColumns.DISPLAY_NAME),
+                null,
+                null,
                 null
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    cursor.getString(
+                        cursor.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME)
+                    )
+                } else {
+                    null
+                }
             }
+        } catch (e: SecurityException) {
+            null
         }
 
         return (displayName ?: fallbackName)

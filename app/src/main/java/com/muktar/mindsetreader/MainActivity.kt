@@ -11,6 +11,7 @@ import android.widget.TextView
 import android.content.Intent
 import android.net.Uri
 import android.widget.FrameLayout
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 class MainActivity : AppCompatActivity() {
     private lateinit var pdfView: PDFView
@@ -151,6 +152,15 @@ class MainActivity : AppCompatActivity() {
                         page + 1,
                         pageCount
                     )
+                }
+                .onError {
+                    pdfScreen.visibility = View.GONE
+                    homeLayout.visibility = View.VISIBLE
+                    Toast.makeText(
+                        this,
+                        "Cannot open PDF: file missing or inaccessible",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
                 .load()
         }
