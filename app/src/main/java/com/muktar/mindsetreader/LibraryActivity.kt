@@ -30,10 +30,6 @@ class LibraryActivity : AppCompatActivity() {
                     uri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
-                getSharedPreferences("library", MODE_PRIVATE)
-                    .edit()
-                    .putString("last_opened_book_uri", uri.toString())
-                    .apply()
 
                 val bookName = contentResolver.query(
                     uri,
@@ -61,22 +57,6 @@ class LibraryActivity : AppCompatActivity() {
                 )
                 saveBook(book)
                 addBookButton(book)
-
-                val bookButton = Button(this)
-                bookButton.text = bookName
-                bookButton.layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                bookButton.setOnClickListener {
-                    val intent = Intent(this, MainActivity::class.java)
-                    intent.putExtra("pdf_uri", uri.toString())
-                    intent.putExtra("open_pdf", true)
-                    startActivity(intent)
-                }
-
-                pdfLibraryContainer.addView(bookButton)
-
             }
         }
     override fun onCreate(savedInstanceState: Bundle?) {
