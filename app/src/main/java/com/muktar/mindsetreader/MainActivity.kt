@@ -165,9 +165,16 @@ class MainActivity : AppCompatActivity() {
                 .load()
         }
 
-        if (openPdf) {
+        val isReaderOpen = savedInstanceState?.getBoolean("is_reader_open", false) ?: false
+
+        if (openPdf || isReaderOpen) {
             continueButton.performClick()
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean("is_reader_open", pdfScreen.visibility == View.VISIBLE)
     }
     override fun onResume() {
         super.onResume()
