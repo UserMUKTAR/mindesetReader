@@ -88,6 +88,10 @@ class LibraryActivity : AppCompatActivity() {
 
         librarySortSpinner.adapter = sortAdapter
 
+        val preferences = getSharedPreferences("library", MODE_PRIVATE)
+        val savedSortPosition = preferences.getInt("library_sort_position", 0)
+        librarySortSpinner.setSelection(savedSortPosition)
+
         librarySortSpinner.onItemSelectedListener =
             object : AdapterView.OnItemSelectedListener {
 
@@ -97,7 +101,10 @@ class LibraryActivity : AppCompatActivity() {
                     position: Int,
                     id: Long
                 ) {
-                    loadBooks()
+                    preferences.edit()
+                        .putInt("library_sort_position", position)
+                        .apply()
+                    filterBooks(librarySearch.text?.toString().orEmpty())
                 }
 
                 override fun onNothingSelected(parent: AdapterView<*>?) {
@@ -139,7 +146,8 @@ class LibraryActivity : AppCompatActivity() {
 
         if (::pdfLibraryContainer.isInitialized) {
             pdfLibraryContainer.removeAllViews()
-            loadBooks()
+            val librarySearch = findViewById<EditText>(R.id.librarySearch)
+            filterBooks(librarySearch?.text?.toString().orEmpty())
         }
     }
     private fun saveBook(book: PdfBook) {
