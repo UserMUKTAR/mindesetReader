@@ -18,6 +18,7 @@ import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Spinner
+import android.widget.Toast
 
 class LibraryActivity : AppCompatActivity() {
 
@@ -53,6 +54,17 @@ class LibraryActivity : AppCompatActivity() {
                 } ?: "PDF"
 
                 val bookId = uri.toString().hashCode().toString()
+                val preferences = getSharedPreferences("library", MODE_PRIVATE)
+
+                if (preferences.contains("book_${bookId}_name")) {
+                    Toast.makeText(
+                        this,
+                        "Book already exists in library",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@registerForActivityResult
+                }
+
                 val book = PdfBook(
                     id = bookId,
                     name = bookName,
