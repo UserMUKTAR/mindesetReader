@@ -13,6 +13,8 @@ import android.net.Uri
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import com.muktar.mindsetreader.data.local.BookMigrationHelper
+
 class MainActivity : AppCompatActivity() {
     private lateinit var pdfView: PDFView
     private lateinit var preferences: android.content.SharedPreferences
@@ -22,6 +24,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        BookMigrationHelper.migrateIfNeededAsync(this)
 
         val openPdf = intent.getBooleanExtra("open_pdf", false)
         val fromLibrary = intent.getBooleanExtra("from_library", false)
