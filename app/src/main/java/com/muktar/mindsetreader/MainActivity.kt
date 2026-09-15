@@ -13,7 +13,10 @@ import android.net.Uri
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.lifecycle.lifecycleScope
+import com.muktar.mindsetreader.data.BookRepository
 import com.muktar.mindsetreader.data.local.BookMigrationHelper
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private lateinit var pdfView: PDFView
@@ -21,9 +24,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var readingProgress: ProgressBar
     private lateinit var progressText: TextView
     private lateinit var pdfScreen: FrameLayout
+    private lateinit var repository: BookRepository
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        repository = BookRepository.getRepository(this)
 
         BookMigrationHelper.migrateIfNeededAsync(this)
 
@@ -102,8 +108,7 @@ class MainActivity : AppCompatActivity() {
 
 
         continueButton.setOnClickListener {
-            val uriToOpen = intent.getStringExtra("pdf_uri")
-                ?: preferences.getString("last_opened_book_uri", null)
+            val uriToOpen = preferences.getString("last_opened_book_uri", null)
 
             val bookIdToOpen = uriToOpen?.hashCode()?.toString()
 
@@ -143,12 +148,24 @@ class MainActivity : AppCompatActivity() {
                         .putInt("book_${bookIdToOpen}_progress", progress)
                         .apply()
 
+                    val lastReadAt = System.currentTimeMillis()
+
                     preferences.edit()
                         .putLong(
                             "book_${bookIdToOpen}_last_read_at",
-                            System.currentTimeMillis()
+                            lastReadAt
                         )
                         .apply()
+
+                    lifecycleScope.launch {
+                        repository.updateProgress(
+                            id = bookIdToOpen,
+                            lastPage = page,
+                            pageCount = pageCount,
+                            progress = progress,
+                            lastReadAt = lastReadAt
+                        )
+                    }
 
                     progressText.text = getString(
                         R.string.reading_progress_with_page,
@@ -245,6 +262,8 @@ class MainActivity : AppCompatActivity() {
                     .removeSuffix(".pdf")
                     .removeSuffix(".PDF")
                     .trim()
+            } else {
+                continueReadingCard.visibility = View.GONE
             }
         }
 

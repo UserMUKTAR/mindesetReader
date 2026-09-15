@@ -19,10 +19,15 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Spinner
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
+import com.muktar.mindsetreader.data.BookRepository
+import kotlinx.coroutines.launch
 
 class LibraryActivity : AppCompatActivity() {
 
     private lateinit var pdfLibraryContainer: LinearLayout
+    private lateinit var repository: BookRepository
+    private var allBooksList: List<PdfBook> = emptyList()
 
     private val pdfPicker =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
@@ -54,30 +59,33 @@ class LibraryActivity : AppCompatActivity() {
                 } ?: "PDF"
 
                 val bookId = uri.toString().hashCode().toString()
-                val preferences = getSharedPreferences("library", MODE_PRIVATE)
 
-                if (preferences.contains("book_${bookId}_name")) {
-                    Toast.makeText(
-                        this,
-                        "Book already exists in library",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    return@registerForActivityResult
+                lifecycleScope.launch {
+                    if (repository.isBookDuplicate(bookId)) {
+                        Toast.makeText(
+                            this@LibraryActivity,
+                            "Book already exists in library",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return@launch
+                    }
+
+                    val book = PdfBook(
+                        id = bookId,
+                        name = bookName,
+                        uri = uri.toString(),
+                        addedAt = System.currentTimeMillis()
+                    )
+                    repository.insertBook(book)
+                    saveBook(book)
                 }
-
-                val book = PdfBook(
-                    id = bookId,
-                    name = bookName,
-                    uri = uri.toString(),
-                    addedAt = System.currentTimeMillis()
-                )
-                saveBook(book)
-                addBookButton(book)
             }
         }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_library)
+
+        repository = BookRepository.getRepository(this)
 
         val addPdfButton = findViewById<Button>(R.id.addPdfButton)
         pdfLibraryContainer =
@@ -217,58 +225,12 @@ class LibraryActivity : AppCompatActivity() {
     }
 
     private fun loadBooks() {
-        val preferences = getSharedPreferences("library", MODE_PRIVATE)
-        pdfLibraryContainer.removeAllViews()
-        val books = mutableListOf<PdfBook>()
-
-        for ((key, value) in preferences.all) {
-            if (key.startsWith("book_") && key.endsWith("_name")) {
-                val bookId = key.removePrefix("book_").removeSuffix("_name")
-
-                val storedName = value as? String ?: continue
-                val uri = preferences.getString("book_${bookId}_uri", null) ?: continue
-                val name = getDisplayName(uri, storedName)
-
-                val lastPage = preferences.getInt("book_${bookId}_last_page", 0)
-                val progress = preferences.getInt("book_${bookId}_progress", 0)
-
-                val pageCount = preferences.getInt(
-                    "book_${bookId}_page_count",
-                    0
-                )
-
-                val storedAddedAt = preferences.getLong(
-                    "book_${bookId}_added_at",
-                    0L
-                )
-
-                val addedAt = if (storedAddedAt > 0L) {
-                    storedAddedAt
-                } else {
-                    1L
-                }
-
-                val lastReadAt = preferences.getLong(
-                    "book_${bookId}_last_read_at",
-                    0L
-                )
-
-                books.add(
-                    PdfBook(
-                        id = bookId,
-                        name = name,
-                        uri = uri,
-                        lastPage = lastPage,
-                        progress = progress,
-                        pageCount = pageCount,
-                        addedAt = addedAt,
-                        lastReadAt = lastReadAt
-                    )
-                )
+        lifecycleScope.launch {
+            repository.allBooks.collect { books ->
+                allBooksList = books
+                val librarySearch = findViewById<EditText>(R.id.librarySearch)
+                filterBooks(librarySearch?.text?.toString().orEmpty())
             }
-        }
-        sortBooks(books).forEach { book ->
-            addBookButton(book)
         }
     }
 
@@ -277,60 +239,15 @@ class LibraryActivity : AppCompatActivity() {
 
         pdfLibraryContainer.removeAllViews()
 
-        val preferences = getSharedPreferences("library", MODE_PRIVATE)
         val books = mutableListOf<PdfBook>()
 
-        for ((key, value) in preferences.all) {
-            if (key.startsWith("book_") && key.endsWith("_name")) {
+        for (book in allBooksList) {
+            val name = getDisplayName(book.uri, book.name)
 
-                val bookId =
-                    key.removePrefix("book_").removeSuffix("_name")
-
-                val storedName = value as? String ?: continue
-
-                val uri =
-                    preferences.getString("book_${bookId}_uri", null)
-                        ?: continue
-
-                val name = getDisplayName(uri, storedName)
-
-                if (searchQuery.isEmpty() ||
-                    name.lowercase().contains(searchQuery)
-                ) {
-                    val lastPage =
-                        preferences.getInt("book_${bookId}_last_page", 0)
-
-                    val progress =
-                        preferences.getInt("book_${bookId}_progress", 0)
-
-                    val pageCount = preferences.getInt(
-                        "book_${bookId}_page_count",
-                        0
-                    )
-
-                    val addedAt = preferences.getLong(
-                        "book_${bookId}_added_at",
-                        1L
-                    )
-
-                    val lastReadAt = preferences.getLong(
-                        "book_${bookId}_last_read_at",
-                        0L
-                    )
-
-                    books.add(
-                        PdfBook(
-                            id = bookId,
-                            name = name,
-                            uri = uri,
-                            lastPage = lastPage,
-                            progress = progress,
-                            pageCount = pageCount,
-                            addedAt = addedAt,
-                            lastReadAt = lastReadAt
-                        )
-                    )
-                }
+            if (searchQuery.isEmpty() ||
+                name.lowercase().contains(searchQuery)
+            ) {
+                books.add(book.copy(name = name))
             }
         }
         sortBooks(books).forEach { book ->
@@ -400,7 +317,10 @@ class LibraryActivity : AppCompatActivity() {
                         .remove("book_${book.id}_page_count")
                         .apply()
 
-                    pdfLibraryContainer.removeView(itemView)                }
+                    lifecycleScope.launch {
+                        repository.deleteBook(book.id)
+                    }
+                }
                 .show()
         }
 
