@@ -14,8 +14,10 @@ import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.lifecycle.lifecycleScope
+import com.muktar.mindsetreader.data.AppPreferencesRepository
 import com.muktar.mindsetreader.data.BookRepository
 import com.muktar.mindsetreader.data.local.BookMigrationHelper
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -24,12 +26,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var readingProgress: ProgressBar
     private lateinit var progressText: TextView
     private lateinit var pdfScreen: FrameLayout
+    private lateinit var homeLayout: LinearLayout
     private lateinit var repository: BookRepository
+    private lateinit var preferencesRepository: AppPreferencesRepository
+    private var currentLastOpenedUri: String? = null
+    private var lastProgressJob: Job? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         repository = BookRepository.getRepository(this)
+        preferencesRepository = AppPreferencesRepository.getRepository(this)
 
         BookMigrationHelper.migrateIfNeededAsync(this)
 
@@ -37,10 +44,20 @@ class MainActivity : AppCompatActivity() {
         val fromLibrary = intent.getBooleanExtra("from_library", false)
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            private var isFinishingFromReader = false
+
             override fun handleOnBackPressed() {
                 if (pdfScreen.visibility == View.VISIBLE) {
                     if (fromLibrary) {
-                        finish()
+                        if (isFinishingFromReader) return
+                        isFinishingFromReader = true
+                        lifecycleScope.launch {
+                            try {
+                                lastProgressJob?.join()
+                            } finally {
+                                finish()
+                            }
+                        }
                     } else {
                         pdfScreen.visibility = View.GONE
                         findViewById<LinearLayout>(R.id.homeLayout).visibility = View.VISIBLE
@@ -55,47 +72,34 @@ class MainActivity : AppCompatActivity() {
         preferences = getSharedPreferences("library", MODE_PRIVATE)
 
         pdfScreen = findViewById(R.id.pdfScreen)
+        homeLayout = findViewById(R.id.homeLayout)
         pdfView = findViewById(R.id.pdfView)
-
-        val pdfUri = intent.getStringExtra("pdf_uri")
-            ?: preferences.getString("last_opened_book_uri", null)
-
-        val bookId = pdfUri?.hashCode()?.toString()
-
-        if (pdfUri != null) {
-            preferences.edit()
-                .putString("last_opened_book_uri", pdfUri)
-                .apply()
-        }
-
-
         readingProgress = findViewById(R.id.readingProgress)
         progressText = findViewById(R.id.progressText)
 
-        val homeBookTitle = findViewById<TextView>(R.id.homeBookTitle)
-        val continueReadingCard =
-            findViewById<LinearLayout>(R.id.continueReadingCard)
+        val incomingPdfUri = intent.getStringExtra("pdf_uri")
+        val savedUri = savedInstanceState?.getString("last_opened_book_uri")
 
-        continueReadingCard.visibility =
-            if (pdfUri != null) View.VISIBLE else View.GONE
-
-        if (pdfUri != null) {
-            val libraryPreferences = getSharedPreferences("library", MODE_PRIVATE)
-            val savedName = libraryPreferences.getString(
-                "book_${bookId}_name",
-                null
-            )
-
-            if (savedName != null) {
-                homeBookTitle.text = savedName
+        if (incomingPdfUri != null) {
+            currentLastOpenedUri = incomingPdfUri
+            updateContinueReadingUI(incomingPdfUri)
+            lifecycleScope.launch {
+                preferencesRepository.setLastOpenedBookUri(incomingPdfUri)
             }
+        } else if (savedUri != null) {
+            currentLastOpenedUri = savedUri
+            updateContinueReadingUI(savedUri)
         }
 
-        readingProgress.progress = preferences.getInt("book_${bookId}_progress", 0)
-
-        val savedProgress = preferences.getInt("book_${bookId}_progress", 0)
-        progressText.text = getString(R.string.reading_progress_percent, savedProgress)
-
+        lifecycleScope.launch {
+            preferencesRepository.lastOpenedBookUri.collect { uri ->
+                if (incomingPdfUri != null && uri != incomingPdfUri) {
+                    return@collect
+                }
+                currentLastOpenedUri = uri
+                updateContinueReadingUI(uri)
+            }
+        }
 
         val continueButton = findViewById<Button>(R.id.continueButton)
         val libraryButton = findViewById<Button>(R.id.libraryButton)
@@ -104,103 +108,100 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        val homeLayout = findViewById<LinearLayout>(R.id.homeLayout)
-
-
         continueButton.setOnClickListener {
-            val uriToOpen = preferences.getString("last_opened_book_uri", null)
-
-            val bookIdToOpen = uriToOpen?.hashCode()?.toString()
-
-            if (uriToOpen == null) {
-                return@setOnClickListener
-            }
-            if (bookIdToOpen == null) {
-                return@setOnClickListener
-            }
-            homeLayout.visibility = View.GONE
-            pdfScreen.visibility = View.VISIBLE
-
-            val lastPage = preferences.getInt(
-                "book_${bookIdToOpen}_last_page",
-                0
-            )
-
-
-
-            val pdfLoader = pdfView.fromUri(Uri.parse(uriToOpen))
-
-            pdfLoader
-                .defaultPage(lastPage)
-                .onPageChange { page, pageCount ->
-                    preferences.edit()
-                        .putInt("book_${bookIdToOpen}_last_page", page)
-                        .apply()
-                    preferences.edit()
-                        .putInt("book_${bookIdToOpen}_page_count", pageCount)
-                        .apply()
-
-                    val progress = if (pageCount > 0) ((page + 1) * 100) / pageCount else 0
-
-                    readingProgress.progress = progress
-
-                    preferences.edit()
-                        .putInt("book_${bookIdToOpen}_progress", progress)
-                        .apply()
-
-                    val lastReadAt = System.currentTimeMillis()
-
-                    preferences.edit()
-                        .putLong(
-                            "book_${bookIdToOpen}_last_read_at",
-                            lastReadAt
-                        )
-                        .apply()
-
-                    lifecycleScope.launch {
-                        repository.updateProgress(
-                            id = bookIdToOpen,
-                            lastPage = page,
-                            pageCount = pageCount,
-                            progress = progress,
-                            lastReadAt = lastReadAt
-                        )
-                    }
-
-                    progressText.text = getString(
-                        R.string.reading_progress_with_page,
-                        progress,
-                        page + 1,
-                        pageCount
-                    )
-                }
-                .onError {
-                    pdfScreen.visibility = View.GONE
-                    homeLayout.visibility = View.VISIBLE
-                    Toast.makeText(
-                        this,
-                        "Cannot open PDF: file missing or inaccessible",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-                .load()
+            val uriToOpen = currentLastOpenedUri ?: return@setOnClickListener
+            openBook(uriToOpen)
         }
 
         val isReaderOpen = savedInstanceState?.getBoolean("is_reader_open", false) ?: false
 
-        if (openPdf || isReaderOpen) {
-            continueButton.performClick()
+        if (openPdf && incomingPdfUri != null) {
+            openBook(incomingPdfUri)
+        } else if (isReaderOpen) {
+            val uriToRestore = savedUri ?: currentLastOpenedUri
+            if (uriToRestore != null) {
+                openBook(uriToRestore)
+            }
         }
+    }
+
+    private fun openBook(uriToOpen: String) {
+        val bookIdToOpen = uriToOpen.hashCode().toString()
+
+        homeLayout.visibility = View.GONE
+        pdfScreen.visibility = View.VISIBLE
+
+        val lastPage = preferences.getInt(
+            "book_${bookIdToOpen}_last_page",
+            0
+        )
+
+        val pdfLoader = pdfView.fromUri(Uri.parse(uriToOpen))
+
+        pdfLoader
+            .defaultPage(lastPage)
+            .onPageChange { page, pageCount ->
+                preferences.edit()
+                    .putInt("book_${bookIdToOpen}_last_page", page)
+                    .apply()
+                preferences.edit()
+                    .putInt("book_${bookIdToOpen}_page_count", pageCount)
+                    .apply()
+
+                val progress = if (pageCount > 0) ((page + 1) * 100) / pageCount else 0
+
+                readingProgress.progress = progress
+
+                preferences.edit()
+                    .putInt("book_${bookIdToOpen}_progress", progress)
+                    .apply()
+
+                val lastReadAt = System.currentTimeMillis()
+
+                preferences.edit()
+                    .putLong(
+                        "book_${bookIdToOpen}_last_read_at",
+                        lastReadAt
+                    )
+                    .apply()
+
+                lastProgressJob = lifecycleScope.launch {
+                    repository.updateProgress(
+                        id = bookIdToOpen,
+                        lastPage = page,
+                        pageCount = pageCount,
+                        progress = progress,
+                        lastReadAt = lastReadAt
+                    )
+                }
+
+                progressText.text = getString(
+                    R.string.reading_progress_with_page,
+                    progress,
+                    page + 1,
+                    pageCount
+                )
+            }
+            .onError {
+                pdfScreen.visibility = View.GONE
+                homeLayout.visibility = View.VISIBLE
+                Toast.makeText(
+                    this,
+                    "Cannot open PDF: file missing or inaccessible",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            .load()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putBoolean("is_reader_open", pdfScreen.visibility == View.VISIBLE)
+        outState.putString("last_opened_book_uri", currentLastOpenedUri)
     }
     override fun onResume() {
         super.onResume()
 
-        val homeBookTitle = findViewById<TextView>(R.id.homeBookTitle)
         val dailyQuoteText = findViewById<TextView>(R.id.dailyQuoteText)
 
         val quotes = resources.getStringArray(R.array.reading_quotes)
@@ -210,63 +211,65 @@ class MainActivity : AppCompatActivity() {
 
         dailyQuoteText.text = quotes[dayOfYear % quotes.size]
 
+        updateContinueReadingUI(currentLastOpenedUri)
+    }
+
+    private fun updateContinueReadingUI(uri: String?) {
         val continueReadingCard =
             findViewById<LinearLayout>(R.id.continueReadingCard)
 
-        val libraryPreferences =
-            getSharedPreferences("library", MODE_PRIVATE)
-
-        val lastOpenedUri =
-            libraryPreferences.getString("last_opened_book_uri", null)
-
-        continueReadingCard.visibility =
-            if (lastOpenedUri != null) View.VISIBLE else View.GONE
-
-        if (lastOpenedUri != null) {
-            val lastBookId = lastOpenedUri.hashCode().toString()
-
-            val latestProgress = libraryPreferences.getInt(
-                "book_${lastBookId}_progress",
-                0
-            )
-            val lastPage = libraryPreferences.getInt(
-                "book_${lastBookId}_last_page",
-                0
-            )
-
-            val pageCount = libraryPreferences.getInt(
-                "book_${lastBookId}_page_count",
-                0
-            )
-
-            readingProgress.progress = latestProgress
-
-            progressText.text =
-                if (pageCount > 0) {
-                    "$latestProgress% · Page ${lastPage + 1} of $pageCount"
-                } else {
-                    getString(
-                        R.string.reading_progress_percent,
-                        latestProgress
-                    )
-                }
-            val savedName = libraryPreferences.getString(
-                "book_${lastBookId}_name",
-                null
-            )
-
-            if (savedName != null) {
-                homeBookTitle.text = savedName
-                    .substringAfterLast("/")
-                    .removePrefix("raw:")
-                    .removeSuffix(".pdf")
-                    .removeSuffix(".PDF")
-                    .trim()
-            } else {
-                continueReadingCard.visibility = View.GONE
-            }
+        if (uri == null) {
+            continueReadingCard.visibility = View.GONE
+            return
         }
 
+        val bookId = uri.hashCode().toString()
+        val libraryPreferences =
+            getSharedPreferences("library", MODE_PRIVATE)
+        val savedName = libraryPreferences.getString(
+            "book_${bookId}_name",
+            null
+        )
+
+        if (savedName == null) {
+            continueReadingCard.visibility = View.GONE
+            return
+        }
+
+        continueReadingCard.visibility = View.VISIBLE
+
+        val homeBookTitle = findViewById<TextView>(R.id.homeBookTitle)
+        homeBookTitle.text = savedName
+            .substringAfterLast("/")
+            .removePrefix("raw:")
+            .removeSuffix(".pdf")
+            .removeSuffix(".PDF")
+            .trim()
+
+        val latestProgress = libraryPreferences.getInt(
+            "book_${bookId}_progress",
+            0
+        )
+        val lastPage = libraryPreferences.getInt(
+            "book_${bookId}_last_page",
+            0
+        )
+        val pageCount = libraryPreferences.getInt(
+            "book_${bookId}_page_count",
+            0
+        )
+
+        readingProgress.progress = latestProgress
+
+        progressText.text =
+            if (pageCount > 0) {
+                "$latestProgress% · Page ${lastPage + 1} of $pageCount"
+            } else {
+                getString(
+                    R.string.reading_progress_percent,
+                    latestProgress
+                )
+            }
     }
 
 }

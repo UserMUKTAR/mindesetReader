@@ -20,6 +20,7 @@ import android.widget.ArrayAdapter
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
+import com.muktar.mindsetreader.data.AppPreferencesRepository
 import com.muktar.mindsetreader.data.BookRepository
 import kotlinx.coroutines.launch
 
@@ -27,6 +28,8 @@ class LibraryActivity : AppCompatActivity() {
 
     private lateinit var pdfLibraryContainer: LinearLayout
     private lateinit var repository: BookRepository
+    private lateinit var preferencesRepository: AppPreferencesRepository
+    private var isSortPositionInitialized = false
     private var allBooksList: List<PdfBook> = emptyList()
 
     private val pdfPicker =
@@ -86,6 +89,7 @@ class LibraryActivity : AppCompatActivity() {
         setContentView(R.layout.activity_library)
 
         repository = BookRepository.getRepository(this)
+        preferencesRepository = AppPreferencesRepository.getRepository(this)
 
         val addPdfButton = findViewById<Button>(R.id.addPdfButton)
         pdfLibraryContainer =
@@ -108,10 +112,6 @@ class LibraryActivity : AppCompatActivity() {
 
         librarySortSpinner.adapter = sortAdapter
 
-        val preferences = getSharedPreferences("library", MODE_PRIVATE)
-        val savedSortPosition = preferences.getInt("library_sort_position", 0)
-        librarySortSpinner.setSelection(savedSortPosition)
-
         librarySortSpinner.onItemSelectedListener =
             object : AdapterView.OnItemSelectedListener {
 
@@ -121,15 +121,27 @@ class LibraryActivity : AppCompatActivity() {
                     position: Int,
                     id: Long
                 ) {
-                    preferences.edit()
-                        .putInt("library_sort_position", position)
-                        .apply()
+                    if (isSortPositionInitialized) {
+                        lifecycleScope.launch {
+                            preferencesRepository.setLibrarySortPosition(position)
+                        }
+                    }
                     filterBooks(librarySearch.text?.toString().orEmpty())
                 }
 
                 override fun onNothingSelected(parent: AdapterView<*>?) {
                 }
             }
+
+        lifecycleScope.launch {
+            val savedSortPosition = preferencesRepository.getLibrarySortPosition()
+            if (librarySortSpinner.selectedItemPosition != savedSortPosition) {
+                librarySortSpinner.setSelection(savedSortPosition)
+            }
+            librarySortSpinner.post {
+                isSortPositionInitialized = true
+            }
+        }
 
         librarySearch.addTextChangedListener(object : TextWatcher {
 
@@ -299,13 +311,6 @@ class LibraryActivity : AppCompatActivity() {
                 .setNegativeButton("Cancel", null)
                 .setPositiveButton("Delete") { _, _ ->
                     val preferences = getSharedPreferences("library", MODE_PRIVATE)
-                    val lastOpenedUri = preferences.getString("last_opened_book_uri", null)
-
-                    if (lastOpenedUri == book.uri) {
-                        preferences.edit()
-                            .remove("last_opened_book_uri")
-                            .apply()
-                    }
 
                     preferences.edit()
                         .remove("book_${book.id}_name")
@@ -318,6 +323,10 @@ class LibraryActivity : AppCompatActivity() {
                         .apply()
 
                     lifecycleScope.launch {
+                        val lastOpenedUri = preferencesRepository.getLastOpenedBookUri()
+                        if (lastOpenedUri == book.uri) {
+                            preferencesRepository.clearLastOpenedBookUri()
+                        }
                         repository.deleteBook(book.id)
                     }
                 }
